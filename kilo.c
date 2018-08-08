@@ -48,6 +48,7 @@ char editorReadKey(){
 
 void editorRefreshScreen(){
     write(STDOUT_FILENO, "\x1b[2J", 4);    
+    write(STDOUT,FILENO, "\x1b[H", 4);
 }
 
 /*** Input ***/
@@ -56,7 +57,6 @@ void editorProcessKeypress(){
 
     switch(c){
         case CTRL_KEY('q'):
-            printf("exiting\r\n");
             exit(0);
             break;
     }
