@@ -9,7 +9,11 @@
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 /*** Data ***/
-struct termios orig_termios;
+struct editorConfig {
+    struct termios orig_termios;
+};
+
+struct editorConfig E;
 
 /*** Terminal ***/
 void die(const char* call, const char* funcBlock){
@@ -21,14 +25,14 @@ void die(const char* call, const char* funcBlock){
     exit(1);
 }
 void disableRawMode(){
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) die("tcsetattr",__func__);
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1) die("tcsetattr",__func__);
 }
 
 void enableRawMode(){
-    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) die ("tcgetattr",__func__);
+    if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1) die ("tcgetattr",__func__);
     atexit(disableRawMode);
 
-    struct termios raw = orig_termios;
+    struct termios raw = E.orig_termios;
     raw.c_iflag &= ~(ICRNL | IXON | BRKINT | INPCK | ISTRIP);
     raw.c_oflag &= ~(OPOST);
     raw.c_cflag |= (CS8);
@@ -48,10 +52,6 @@ char editorReadKey(){
     return c;
 }
 
-void editorRefreshScreen(){
-    write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen before processing key
-}
-
 /*** Input ***/
 void editorProcessKeypress(){
     char c = editorReadKey();    
@@ -62,6 +62,21 @@ void editorProcessKeypress(){
             exit(0);
             break;
     }
+}
+
+/*** Output ***/
+void editorDrawRows(){
+    int y;    
+    for (y=0; y<24; y++){
+        write(STDOUT_FILENO, "=\r\n", 3);    
+    }
+}
+
+void editorRefreshScreen(){
+    write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen before processing key
+    write(STDOUT_FILENO, "\x1b[H", 3);
+    editorDrawRows();
+    write(STDOUT_FILENO, "\x1b[1;2H", 7);
 }
 
 /*** Init ***/
