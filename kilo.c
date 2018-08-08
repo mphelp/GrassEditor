@@ -13,6 +13,8 @@ struct termios orig_termios;
 
 /*** Terminal ***/
 void die(const char* call, const char* funcBlock){
+    write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen when unsuccessful call 
+
     char buf[50];
     snprintf(buf, sizeof(buf), "Call: %s\tFunc Block: %s\n", call, funcBlock);
     perror(buf);
@@ -47,8 +49,7 @@ char editorReadKey(){
 }
 
 void editorRefreshScreen(){
-    write(STDOUT_FILENO, "\x1b[2J", 4);    
-    write(STDOUT,FILENO, "\x1b[H", 4);
+    write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen before processing key
 }
 
 /*** Input ***/
@@ -57,6 +58,7 @@ void editorProcessKeypress(){
 
     switch(c){
         case CTRL_KEY('q'):
+            write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen on safe exit
             exit(0);
             break;
     }
