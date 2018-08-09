@@ -8,8 +8,6 @@
 
 /*** Defines ***/
 #define CTRL_KEY(k) ((k) & 0x1f)
-#define DEBUG
-#define die(str...) die(str, __LINE__, __func__) 
 
 /*** Data ***/
 struct editorConfig {
@@ -20,19 +18,19 @@ struct editorConfig {
 struct editorConfig E;
 
 /*** Terminal ***/
-void die(const char* failedCall, int lineNum, const char* func){
+void die(const char* failedCall, int lineNum){ 
     write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen when unsuccessful call 
 
     char buf[80];
-    snprintf(buf, sizeof(buf), "%s:%d:%s", failedCall, lineNum, func);
+    snprintf(buf, sizeof(buf), "%s:%d\n", failedCall, lineNum);
     perror(buf);
     exit(1); 
 }
 void disableRawMode(){
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1) die("tcsetattr");
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1) die("tcsetattr",__LINE__);
 }
 void enableRawMode(){
-    if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1) die("tcgetattr"); 
+    if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1) die("tcgetattr",__LINE__); 
     atexit(disableRawMode);
 
     struct termios raw = E.orig_termios;
@@ -43,13 +41,13 @@ void enableRawMode(){
     raw.c_cc[VMIN] = 0;
     raw.c_cc[VTIME] = 10;
 
-    if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
+    if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr",__LINE__);
 }
 char editorReadKey(){
     int nread;
     char c;
     while ((nread = read(STDIN_FILENO, &c, 1)) != 1){
-        if (nread == -1 && errno != EAGAIN) die("read");
+        if (nread == -1 && errno != EAGAIN) die("read",__LINE__);
     }
     return c;
 }
