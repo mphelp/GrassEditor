@@ -4,32 +4,35 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <sys/ioctl.h>
 
 /*** Defines ***/
 #define CTRL_KEY(k) ((k) & 0x1f)
+#define DEBUG
+#define die(str...) die(str, __LINE__, __func__) 
 
 /*** Data ***/
 struct editorConfig {
+    int screenrows;
+    int screencols;
     struct termios orig_termios;
 };
-
 struct editorConfig E;
 
 /*** Terminal ***/
-void die(const char* call, const char* funcBlock){
+void die(const char* failedCall, int lineNum, const char* func){
     write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen when unsuccessful call 
 
-    char buf[50];
-    snprintf(buf, sizeof(buf), "Call: %s\tFunc Block: %s\n", call, funcBlock);
+    char buf[80];
+    snprintf(buf, sizeof(buf), "%s:%d:%s", failedCall, lineNum, func);
     perror(buf);
-    exit(1);
+    exit(1); 
 }
 void disableRawMode(){
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1) die("tcsetattr",__func__);
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1) die("tcsetattr");
 }
-
 void enableRawMode(){
-    if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1) die ("tcgetattr",__func__);
+    if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1) die("tcgetattr"); 
     atexit(disableRawMode);
 
     struct termios raw = E.orig_termios;
@@ -40,16 +43,26 @@ void enableRawMode(){
     raw.c_cc[VMIN] = 0;
     raw.c_cc[VTIME] = 10;
 
-    if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr",__func__); 
+    if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
 }
-
 char editorReadKey(){
     int nread;
     char c;
     while ((nread = read(STDIN_FILENO, &c, 1)) != 1){
-        if (nread == -1 && errno != EAGAIN) die("read",__func__);
+        if (nread == -1 && errno != EAGAIN) die("read");
     }
     return c;
+}
+int getWindowSize(int*rows, int*cols){
+    struct winsize ws;
+    
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0){
+        return -1;
+    } else {
+        *cols = ws.ws_col;
+        *rows = ws.ws_row;
+        return 0;
+    }
 }
 
 /*** Input ***/
@@ -71,7 +84,6 @@ void editorDrawRows(){
         write(STDOUT_FILENO, "=\r\n", 3);    
     }
 }
-
 void editorRefreshScreen(){
     write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen before processing key
     write(STDOUT_FILENO, "\x1b[H", 3);
