@@ -8,7 +8,7 @@
 
 /*** Defines ***/
 #define CTRL_KEY(k) ((k) & 0x1f)
-#define die(str) write(STDOUT_FILENO,"\x1b[2J",4); char buf[80]; snprintf(buf,sizeof(buf),"Call %s failed in...%s():%d\n",str,__func__,__LINE__);perror(buf);exit(1)
+#define die(str) write(STDOUT_FILENO,"\x1b[2J",4); char buf[80]; snprintf(buf,sizeof(buf),"Call %s failed in...%s():%d\r\n",str,__func__,__LINE__);perror(buf);printf("\r");exit(1)
 
 /*** Data ***/
 struct editorConfig {
@@ -55,7 +55,9 @@ char editorReadKey(){
 int getWindowSize(int*rows, int*cols){
     struct winsize ws;
     
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0){
+    if (1 || ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0){
+        if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12) return -1;
+        editorReadKey();
         return -1;
     } else {
         *cols = ws.ws_col;
@@ -67,8 +69,8 @@ int getWindowSize(int*rows, int*cols){
 /*** Output ***/
 void editorDrawRows(){
     int y;    
-    for (y=0; y<24; y++){
-        write(STDOUT_FILENO, "=\r\n", 3);    
+    for (y=0; y<E.screenrows; y++){
+        write(STDOUT_FILENO, "@\r\n", 3);    
     }
 }
 void editorRefreshScreen(){
