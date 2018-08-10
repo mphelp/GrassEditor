@@ -8,6 +8,7 @@
 
 /*** Defines ***/
 #define CTRL_KEY(k) ((k) & 0x1f)
+#define die(str) write(STDOUT_FILENO,"\x1b[2J",4); char buf[80]; snprintf(buf,sizeof(buf),"Call %s failed in...%s():%d\n",str,__func__,__LINE__);perror(buf);exit(1)
 
 /*** Data ***/
 struct editorConfig {
@@ -18,19 +19,19 @@ struct editorConfig {
 struct editorConfig E;
 
 /*** Terminal ***/
-void die(const char* failedCall, int lineNum){ 
+void errmess(const char* failedCall, int lineNum){ 
     write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen when unsuccessful call 
 
     char buf[80];
-    snprintf(buf, sizeof(buf), "%s:%d\n", failedCall, lineNum);
+    snprintf(buf, sizeof(buf), "%s():%d\n", failedCall, lineNum);
     perror(buf);
     exit(1); 
 }
 void disableRawMode(){
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1) die("tcsetattr",__LINE__);
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1) {die("tcsetattr");}
 }
 void enableRawMode(){
-    if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1) die("tcgetattr",__LINE__); 
+    if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1) {die("tcgetattr");}
     atexit(disableRawMode);
 
     struct termios raw = E.orig_termios;
@@ -41,13 +42,13 @@ void enableRawMode(){
     raw.c_cc[VMIN] = 0;
     raw.c_cc[VTIME] = 10;
 
-    if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr",__LINE__);
+    if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {die("tcsetattr");}
 }
 char editorReadKey(){
     int nread;
     char c;
     while ((nread = read(STDIN_FILENO, &c, 1)) != 1){
-        if (nread == -1 && errno != EAGAIN) die("read",__LINE__);
+        if (nread == -1 && errno != EAGAIN) {die("read");}
     }
     return c;
 }
@@ -60,18 +61,6 @@ int getWindowSize(int*rows, int*cols){
         *cols = ws.ws_col;
         *rows = ws.ws_row;
         return 0;
-    }
-}
-
-/*** Input ***/
-void editorProcessKeypress(){
-    char c = editorReadKey();    
-
-    switch(c){
-        case CTRL_KEY('q'):
-            write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen on safe exit
-            exit(0);
-            break;
     }
 }
 
@@ -89,10 +78,25 @@ void editorRefreshScreen(){
     write(STDOUT_FILENO, "\x1b[1;2H", 7);
 }
 
+/*** Input ***/
+void editorProcessKeypress(){
+    char c = editorReadKey();    
+
+    switch(c){
+        case CTRL_KEY('q'):
+            write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen on safe exit
+            exit(0);
+            break;
+    }
+}
+
 /*** Init ***/
+void initEditor(){
+    if (getWindowSize(&E.screenrows, &E.screencols) == -1) {die("getWindowSize");}
+}
 int main(){
     enableRawMode();
-
+    initEditor();
     while (1){
         editorRefreshScreen();
         editorProcessKeypress();    
