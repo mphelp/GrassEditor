@@ -8,7 +8,8 @@
 
 /*** Defines ***/
 #define CTRL_KEY(k) ((k) & 0x1f)
-#define die(str) write(STDOUT_FILENO,"\x1b[2J",4); char buf[80]; snprintf(buf,sizeof(buf),"Call %s failed in...%s():%d\r\n",str,__func__,__LINE__);perror(buf);printf("\r");exit(1)
+#define die(str) write(STDOUT_FILENO,"\x1b[2J",4);write(STDOUT_FILENO,"\x1b[H",3);char _buf[80]; \
+    snprintf(_buf,sizeof(_buf),"Call %s failed in...%s():%d\r\n",str,__func__,__LINE__);perror(_buf);printf("\r");exit(1)
 
 /*** Data ***/
 struct editorConfig {
@@ -52,13 +53,28 @@ char editorReadKey(){
     }
     return c;
 }
+int getCursorPosition(int* rows, int* cols){
+    char buf[32];
+    unsigned int i = 0;
+    // func unfinished
+    if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4) return -1;
+    printf("\r\n");
+    char c;
+    while (read(STDIN_FILENO, &c, 1) == 1){
+        if (iscntrl(c)){
+            printf("%d\r\n", c);
+        } else {
+            printf("%d ('%c')\r\n", c, c);
+        }
+    }
+    //editorReadKey();
+}
 int getWindowSize(int*rows, int*cols){
     struct winsize ws;
     
     if (1 || ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0){
         if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12) return -1;
-        editorReadKey();
-        return -1;
+        return getCursorPosition(rows, cols);
     } else {
         *cols = ws.ws_col;
         *rows = ws.ws_row;
@@ -77,7 +93,7 @@ void editorRefreshScreen(){
     write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen before processing key
     write(STDOUT_FILENO, "\x1b[H", 3);
     editorDrawRows();
-    write(STDOUT_FILENO, "\x1b[1;2H", 7);
+    write(STDOUT_FILENO, "\x1b[H", 3);
 }
 
 /*** Input ***/
