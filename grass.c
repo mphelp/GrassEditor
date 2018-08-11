@@ -38,7 +38,8 @@ typedef struct erow {
 } erow;
 struct editorConfig {
     int cx, cy; // cursor position on screen
-    int rowoff; // current scroll index of file (represents top line of screen)
+    int rowoff; // current line index of file (represents top line of screen)
+    int coloff; // horizontal scroll index
     int screenrows; // screen height
     int screencols; // screen width
     int numrows; // num rows in file open
@@ -202,12 +203,10 @@ void abFree(struct abuf* ab){
 
 /*** Output ***/
 void editorScroll(){
-    if (E.cy < E.rowoff){
-        E.rowoff = E.cy;
-    }
-    if (E.cy >= E.rowoff + E.screenrows){
-        E.rowoff = E.cy - E.screenrows + 1;
-    }
+    if (E.cy < E.rowoff) E.rowoff = E.cy;
+    if (E.cy >= E.rowoff + E.screenrows) E.rowoff = E.cy - E.screenrows + 1;
+    if (E.cx < E.coloff) E.coloff = E.cx;
+    if (E.cx >= E.coloff + E.screencols) E.coloff = E.cx - E.screencols + 1;
 }
 void editorDrawWelcomeRow(struct abuf* ab){
     // Add Welcome message to abuf
@@ -222,7 +221,13 @@ void editorDrawWelcomeRow(struct abuf* ab){
     while (padding--) abAppend(ab, " ", 1);
     abAppend(ab, welcome, welcomelen);
 }
+void editorDebugDisplayCursorPos(struct abuf* ab){
+    /* Display cursor location: (debugging purposes) */
+    char location[80]; int locationlen = snprintf(location, sizeof(location), "\t\tcx:%d;cy:%d", E.cx, E.cy);
+    abAppend(ab, location, locationlen);
+}
 void editorDrawRows(struct abuf* ab){
+    // More like "add" to buffer than "draw"
     int y, filerow;
     for (y=0; y < E.screenrows; y++){
         // For each line:
@@ -235,18 +240,17 @@ void editorDrawRows(struct abuf* ab){
             }
         } else {
             // Display each line of text buffer
-            int len = E.row[filerow].size;
+            int len = E.row[filerow].size - E.coloff;
+            if (len < 0) len = 0;
             if (len > E.screencols) len = E.screencols;
-            abAppend(ab, E.row[filerow].chars, len);
+            abAppend(ab, &E.row[filerow].chars[E.coloff], len);
         }
 
         abAppend(ab, "\x1b[K", 3); // clear line after cursor
         if (y < E.screenrows - 1){
             abAppend(ab, "\r\n", 2);
         } else {
-            /* Display cursor location: (debugging purposes) */
-            char location[80]; int locationlen = snprintf(location, sizeof(location), "\t\tcx:%d;cy:%d", E.cx, E.cy);
-            abAppend(ab, location, locationlen);
+            editorDebugDisplayCursorPos(ab);
         }
     }
 }
@@ -261,7 +265,7 @@ void editorRefreshScreen(){
     editorDrawRows(&ab);
 
     char buf[32];
-    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, E.cx + 1);
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, (E.cx - E.coloff) + 1);
     abAppend(&ab, buf, strlen(buf));
 
     abAppend(&ab, "\x1b[?25h", 6);
@@ -278,7 +282,7 @@ void editorMoveCursor(int key){
         case ARROW_UP:
             if (E.cy != 0) E.cy--; break;
         case ARROW_RIGHT:
-            if (E.cx != E.screencols - 1) E.cx++; break;
+            E.cx++; break;
         case ARROW_DOWN:
             if (E.cy < E.numrows) E.cy++; break; // cursor can extend below so long as EOF not reached
     }
@@ -321,6 +325,7 @@ void initEditor(){
     E.cx = 0;
     E.cy = 0;
     E.rowoff = 0;
+    E.coloff = 0;
     E.numrows = 0;
     E.row = NULL;
     if (getWindowSize(&E.screenrows, &E.screencols) == -1) {die("getWindowSize");}
