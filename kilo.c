@@ -58,16 +58,17 @@ int getCursorPosition(int* rows, int* cols){
     unsigned int i = 0;
     // func unfinished
     if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4) return -1;
-    printf("\r\n");
-    char c;
-    while (read(STDIN_FILENO, &c, 1) == 1){
-        if (iscntrl(c)){
-            printf("%d\r\n", c);
-        } else {
-            printf("%d ('%c')\r\n", c, c);
-        }
+    while (i < sizeof(buf)-1){
+        if (read(STDIN_FILENO, &buf[i], 1) != 1) break;
+        if (buf[i] == 'R') break;
+        i++;
     }
-    //editorReadKey();
+    buf[i] = '\0';
+    
+    if (buf[i] != '\x1b' || buf[1] != '[') return -1;
+    if ((sscanf(&buf[2], "%d;%d", rows, cols) != 2) return -1;
+
+    return 0;
 }
 int getWindowSize(int*rows, int*cols){
     struct winsize ws;
