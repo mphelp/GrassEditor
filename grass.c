@@ -17,7 +17,7 @@
 
 /*** Data ***/
 struct editorConfig {
-    int cx, cy;
+    unsigned int cx, cy;
     int screenrows;
     int screencols;
     struct termios orig_termios;
@@ -108,7 +108,6 @@ void abFree(struct abuf* ab){
 /*** Output ***/
 void editorDrawRows(struct abuf* ab){
     int y;    
-    const char* leftColChar = "@";
     for (y=0; y<E.screenrows; y++){
         if (y == E.screenrows / 3){
             char welcome[80];
@@ -117,7 +116,7 @@ void editorDrawRows(struct abuf* ab){
             if (welcomelen > E.screencols) welcomelen = E.screencols;
             int padding = (E.screencols - welcomelen) / 2;
             if (padding){
-                abAppend(ab, leftColChar, 1);
+                abAppend(ab, "@" , 1);
                 padding--;
             }
             while (padding--) abAppend(ab, " ", 1);
@@ -189,7 +188,6 @@ void initEditor(){
 int main(){
     enableRawMode();
     initEditor();
-    // for some reason when E.cx and E.cy are 0, they are not being changed to 1 in esape seq
     while (1){
         editorRefreshScreen();
         editorProcessKeypress();    
