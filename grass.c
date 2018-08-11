@@ -165,9 +165,9 @@ void editorMoveCursor(char key){
         case 'a':
             if (E.cx > 0) E.cx--; break;
         case 's':
-            if (E.cy < E.screenrows - 2) E.cy++; break;
+            if (E.cy < E.screenrows - 1) E.cy++; break;
         case 'd':
-            if (E.cx < E.screencols - 2) E.cx++; break;
+            if (E.cx < E.screencols - 1) E.cx++; break;
     }
 }
 void editorProcessKeypress(){
