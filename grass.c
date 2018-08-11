@@ -15,6 +15,13 @@
     snprintf(_buf,sizeof(_buf),"Call %s failed in...%s():%d\r\n",str,__func__,__LINE__);perror(_buf);printf("\r");exit(1)
 #define ABUF_INIT {NULL, 0}
 
+enum editorKey{
+    ARROW_LEFT = 'a',
+    ARROW_RIGHT = 'd',
+    ARROW_UP = 'w',
+    ARROW_DOWN = 's'
+};
+
 /*** Data ***/
 struct editorConfig {
     int cx, cy;
@@ -58,8 +65,25 @@ char editorReadKey(){
     }
 
     // escape seq
-    
-    return c;
+    if (c == '\x1b'){
+        char seq[3];
+
+        if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
+        if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
+
+        if (seq[0] == '['){
+            switch (seq[1]){
+                // arrow keys
+                case 'A': return ARROW_UP;
+                case 'B': return ARROW_DOWN;
+                case 'C': return ARROW_RIGHT;
+                case 'D': return ARROW_LEFT;
+            }
+        }
+        return '\x1b';
+    } else {
+        return c;
+    }
 }
 int getCursorPosition(int* rows, int* cols){
     char buf[32];
@@ -111,8 +135,9 @@ void abFree(struct abuf* ab){
 /*** Output ***/
 void editorDrawRows(struct abuf* ab){
     int y;    
-    for (y=0; y<15; y++){
+    for (y=0; y<E.screenrows; y++){
         if (y == E.screenrows / 3){
+            // Welcome message
             char welcome[80];
             int welcomelen = snprintf(welcome, sizeof(welcome),
                 "Grass Editor -- version %s", GRASS_VERSION);
@@ -129,13 +154,13 @@ void editorDrawRows(struct abuf* ab){
         }
         
         abAppend(ab, "\x1b[K", 3); // clear line after cursor
-        if (y < 15 - 1){
-            // Testing:
+        if (y < E.screenrows - 1){
             abAppend(ab, "\r\n", 2);
         } else {
+            /* Display cursor location:
             char location[80];
             int locationlen = snprintf(location, sizeof(location), "\t\tcx:%d;cy:%d", E.cx, E.cy);
-            abAppend(ab, location, locationlen);
+            abAppend(ab, location, locationlen);*/
         }
     }
 }
@@ -160,13 +185,13 @@ void editorRefreshScreen(){
 /*** Input ***/
 void editorMoveCursor(char key){
     switch(key){
-        case 'w':
+        case ARROW_UP:
             if (E.cy > 0) E.cy--; break;
-        case 'a':
+        case ARROW_LEFT:
             if (E.cx > 0) E.cx--; break;
-        case 's':
+        case ARROW_DOWN:
             if (E.cy < E.screenrows - 1) E.cy++; break;
-        case 'd':
+        case ARROW_RIGHT:
             if (E.cx < E.screencols - 1) E.cx++; break;
     }
 }
