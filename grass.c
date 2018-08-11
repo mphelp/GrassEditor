@@ -15,11 +15,11 @@
     snprintf(_buf,sizeof(_buf),"Call %s failed in...%s():%d\r\n",str,__func__,__LINE__);perror(_buf);printf("\r");exit(1)
 #define ABUF_INIT {NULL, 0}
 
-enum editorKey{
-    ARROW_LEFT = 'a',
-    ARROW_RIGHT = 'd',
-    ARROW_UP = 'w',
-    ARROW_DOWN = 's'
+enum editorKey {
+    ARROW_LEFT = 1000,
+    ARROW_RIGHT,
+    ARROW_UP,
+    ARROW_DOWN
 };
 
 /*** Data ***/
@@ -57,7 +57,7 @@ void enableRawMode(){
 
     if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {die("tcsetattr");}
 }
-char editorReadKey(){
+int editorReadKey(){
     int nread;
     char c;
     while ((nread = read(STDIN_FILENO, &c, 1)) != 1){
@@ -183,30 +183,30 @@ void editorRefreshScreen(){
 }
 
 /*** Input ***/
-void editorMoveCursor(char key){
+void editorMoveCursor(int key){
     switch(key){
         case ARROW_UP:
-            if (E.cy > 0) E.cy--; break;
+            if (E.cy != 0) E.cy--; break;
         case ARROW_LEFT:
-            if (E.cx > 0) E.cx--; break;
+            if (E.cx != 0) E.cx--; break;
         case ARROW_DOWN:
-            if (E.cy < E.screenrows - 1) E.cy++; break;
+            if (E.cy != E.screenrows - 1) E.cy++; break;
         case ARROW_RIGHT:
-            if (E.cx < E.screencols - 1) E.cx++; break;
+            if (E.cx != E.screencols - 1) E.cx++; break;
     }
 }
 void editorProcessKeypress(){
-    char c = editorReadKey();    
+    int c = editorReadKey();    
 
     switch(c){
         case CTRL_KEY('q'):
             write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen on safe exit
             exit(0);
             break;
-        case 'w':
-        case 'a':
-        case 's':
-        case 'd':
+        case ARROW_UP:
+        case ARROW_LEFT:
+        case ARROW_DOWN:
+        case ARROW_RIGHT:
             editorMoveCursor(c);
             break;
     }
