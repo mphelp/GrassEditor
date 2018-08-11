@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <string.h>
 
 /*** Defines ***/
@@ -28,10 +29,16 @@ enum editorKey {
 };
 
 /*** Data ***/
+typedef struct erow {
+    int size;
+    char* chars;
+} erow;
 struct editorConfig {
     int cx, cy;
     int screenrows;
     int screencols;
+    int numrows; // currently only 0 or 1
+    erow row;
     struct termios orig_termios;
 };
 struct editorConfig E;
@@ -260,6 +267,7 @@ void editorProcessKeypress(){
 void initEditor(){
     E.cx = 0;
     E.cy = 0;
+    E.numrows = 0;
     if (getWindowSize(&E.screenrows, &E.screencols) == -1) {die("getWindowSize");}
 }
 int main(){
