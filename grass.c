@@ -1,3 +1,7 @@
+/*** Includes ***/
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <termios.h>
 #include <stdlib.h>
@@ -10,7 +14,6 @@
 
 /*** Defines ***/
 #define GRASS_VERSION "0.0.1"
-
 #define CTRL_KEY(k) ((k) & 0x1f)
 #define die(str) write(STDOUT_FILENO,"\x1b[2J",4);write(STDOUT_FILENO,"\x1b[H",3);char _buf[80]; \
     snprintf(_buf,sizeof(_buf),"Call %s failed in...%s():%d\r\n",str,__func__,__LINE__);perror(_buf);printf("\r");exit(1)
@@ -150,6 +153,28 @@ int getWindowSize(int*rows, int*cols){
     }
 }
 
+/*** File I/O ***/
+void editorOpen(char* filename){
+    FILE* fp = fopen(filename, "r");
+    if (!fp) {die("fopen");}
+    
+    char* line = NULL;
+    size_t linecap = 0;
+    ssize_t linelen;
+    linelen = getline(&line, &linecap, fp);
+    if (linelen != -1){
+        while (linelen > 0 && (line[linelen - 1] == '\r' || line[linelen - 1] == '\n'))
+            linelen--;
+        E.row.size = linelen;
+        E.row.chars = malloc(linelen + 1);
+        memcpy(E.row.chars, line, linelen);
+        E.row.chars[linelen] = '\0';
+        E.numrows = 1;
+    }
+    free(line);
+    fclose(fp);
+}
+
 /*** Append Buffer ***/
 struct abuf{
     char* b;
@@ -184,16 +209,25 @@ void editorDrawWelcomeRow(struct abuf* ab){
 void editorDrawRows(struct abuf* ab){
     int y;    
     for (y=0; y<E.screenrows; y++){
-        if (y == E.screenrows / 3){
-            editorDrawWelcomeRow(ab);
+        // For each line:
+        if (y >= E.numrows){
+            if (E.numrows == 0 && y == E.screenrows / 3){
+                editorDrawWelcomeRow(ab);
+            } else {
+                abAppend(ab, "@", 1);
+            }
         } else {
-            abAppend(ab, "@", 1);
+            // Display content
+            int len = E.row.size;
+            if (len > E.screencols) len = E.screencols;
+            abAppend(ab, E.row.chars, len);
         }
+
         abAppend(ab, "\x1b[K", 3); // clear line after cursor
         if (y < E.screenrows - 1){
             abAppend(ab, "\r\n", 2);
         } else {
-            /* Display cursor location:
+            /* Display cursor location: (debugging purposes)
             char location[80]; int locationlen = snprintf(location, sizeof(location), "\t\tcx:%d;cy:%d", E.cx, E.cy);
             abAppend(ab, location, locationlen);*/
         }
@@ -270,9 +304,13 @@ void initEditor(){
     E.numrows = 0;
     if (getWindowSize(&E.screenrows, &E.screencols) == -1) {die("getWindowSize");}
 }
-int main(){
+int main(int argc, char* argv[]){
     enableRawMode();
     initEditor();
+    if (argc >= 2){
+        editorOpen(argv[1]);
+    }
+
     while (1){
         editorRefreshScreen();
         editorProcessKeypress();    
