@@ -1,2 +1,2 @@
-kilo: kilo.c
-	$(CC) kilo.c -o kilo -Wall -Wextra -pedantic -std=c99
+grass: grass.c
+	$(CC) grass.c -o grass -Wall -Wextra -pedantic -std=c99
