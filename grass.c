@@ -20,6 +20,7 @@ enum editorKey {
     ARROW_RIGHT,
     ARROW_UP,
     ARROW_DOWN,
+    DEL_KEY,
     HOME_KEY,
     END_KEY,
     PAGE_UP,
@@ -82,6 +83,7 @@ int editorReadKey(){
                     switch (seq[1]){
                         // -- <esc>[#~
                         case '1': return HOME_KEY;
+                        case '3': return DEL_KEY;
                         case '4': return END_KEY;
                         case '5': return PAGE_UP;
                         case '6': return PAGE_DOWN;
@@ -100,7 +102,7 @@ int editorReadKey(){
                     case 'F': return END_KEY;
                 }
             }
-        } else if (sed[0] == 'O'){
+        } else if (seq[0] == 'O'){
             switch (seq[1]){
                 case 'H': return HOME_KEY;
                 case 'F': return END_KEY;
@@ -159,33 +161,33 @@ void abFree(struct abuf* ab){
 }
 
 /*** Output ***/
+void editorDrawWelcomeRow(struct abuf* ab){
+    // Add Welcome message to abuf
+    char welcome[80];
+    int welcomelen = snprintf(welcome, sizeof(welcome),"Grass Editor -- version %s", GRASS_VERSION);
+    if (welcomelen > E.screencols) welcomelen = E.screencols;
+    int padding = (E.screencols - welcomelen) / 2;
+    if (padding){
+        abAppend(ab, "@" , 1);
+        padding--;
+    }
+    while (padding--) abAppend(ab, " ", 1);
+    abAppend(ab, welcome, welcomelen);
+}
 void editorDrawRows(struct abuf* ab){
     int y;    
     for (y=0; y<E.screenrows; y++){
         if (y == E.screenrows / 3){
-            // Welcome message
-            char welcome[80];
-            int welcomelen = snprintf(welcome, sizeof(welcome),
-                "Grass Editor -- version %s", GRASS_VERSION);
-            if (welcomelen > E.screencols) welcomelen = E.screencols;
-            int padding = (E.screencols - welcomelen) / 2;
-            if (padding){
-                abAppend(ab, "@" , 1);
-                padding--;
-            }
-            while (padding--) abAppend(ab, " ", 1);
-            abAppend(ab, welcome, welcomelen);
+            editorDrawWelcomeRow(ab);
         } else {
             abAppend(ab, "@", 1);
         }
-        
         abAppend(ab, "\x1b[K", 3); // clear line after cursor
         if (y < E.screenrows - 1){
             abAppend(ab, "\r\n", 2);
         } else {
             /* Display cursor location:
-            char location[80];
-            int locationlen = snprintf(location, sizeof(location), "\t\tcx:%d;cy:%d", E.cx, E.cy);
+            char location[80]; int locationlen = snprintf(location, sizeof(location), "\t\tcx:%d;cy:%d", E.cx, E.cy);
             abAppend(ab, location, locationlen);*/
         }
     }
@@ -234,6 +236,9 @@ void editorProcessKeypress(){
             break;
         case END_KEY:
             E.cx = E.screencols - 1; 
+            break;
+        case DEL_KEY:
+            // do nothing currently
             break;
         case PAGE_UP:
         case PAGE_DOWN:
