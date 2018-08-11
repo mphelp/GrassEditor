@@ -17,7 +17,7 @@
 
 /*** Data ***/
 struct editorConfig {
-    unsigned int cx, cy;
+    int cx, cy;
     int screenrows;
     int screencols;
     struct termios orig_termios;
@@ -56,6 +56,9 @@ char editorReadKey(){
     while ((nread = read(STDIN_FILENO, &c, 1)) != 1){
         if (nread == -1 && errno != EAGAIN) {die("read");}
     }
+
+    // escape seq
+    
     return c;
 }
 int getCursorPosition(int* rows, int* cols){
@@ -108,7 +111,7 @@ void abFree(struct abuf* ab){
 /*** Output ***/
 void editorDrawRows(struct abuf* ab){
     int y;    
-    for (y=0; y<E.screenrows; y++){
+    for (y=0; y<15; y++){
         if (y == E.screenrows / 3){
             char welcome[80];
             int welcomelen = snprintf(welcome, sizeof(welcome),
@@ -126,8 +129,13 @@ void editorDrawRows(struct abuf* ab){
         }
         
         abAppend(ab, "\x1b[K", 3); // clear line after cursor
-        if (y < E.screenrows - 1){
+        if (y < 15 - 1){
+            // Testing:
             abAppend(ab, "\r\n", 2);
+        } else {
+            char location[80];
+            int locationlen = snprintf(location, sizeof(location), "\t\tcx:%d;cy:%d", E.cx, E.cy);
+            abAppend(ab, location, locationlen);
         }
     }
 }
@@ -153,13 +161,13 @@ void editorRefreshScreen(){
 void editorMoveCursor(char key){
     switch(key){
         case 'w':
-            E.cy--; break;
+            if (E.cy > 0) E.cy--; break;
         case 'a':
-            E.cx--; break;
+            if (E.cx > 0) E.cx--; break;
         case 's':
-            E.cy++; break;
+            if (E.cy < E.screenrows - 2) E.cy++; break;
         case 'd':
-            E.cx++; break;
+            if (E.cx < E.screencols - 2) E.cx++; break;
     }
 }
 void editorProcessKeypress(){
