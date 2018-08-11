@@ -40,8 +40,8 @@ struct editorConfig {
     int cx, cy;
     int screenrows;
     int screencols;
-    int numrows; // currently only 0 or 1
-    erow row;
+    int numrows;
+    erow* row;
     struct termios orig_termios;
 };
 struct editorConfig E;
@@ -153,6 +153,18 @@ int getWindowSize(int*rows, int*cols){
     }
 }
 
+/*** Row Operations ***/
+void editorAppendRow(char* s, size_t len){
+    E.row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
+
+    int at = E.numrows;
+    E.row[at].size = len;
+    E.row[at].chars = malloc(len + 1);
+    memcpy(E.row[at].chars, s, len);
+    E.row[at].chars[len] = '\0';
+    E.numrows++;
+}
+
 /*** File I/O ***/
 void editorOpen(char* filename){
     FILE* fp = fopen(filename, "r");
@@ -161,15 +173,10 @@ void editorOpen(char* filename){
     char* line = NULL;
     size_t linecap = 0;
     ssize_t linelen;
-    linelen = getline(&line, &linecap, fp);
-    if (linelen != -1){
+    while ((linelen = getline(&line, &linecap, fp)) != -1){
         while (linelen > 0 && (line[linelen - 1] == '\r' || line[linelen - 1] == '\n'))
             linelen--;
-        E.row.size = linelen;
-        E.row.chars = malloc(linelen + 1);
-        memcpy(E.row.chars, line, linelen);
-        E.row.chars[linelen] = '\0';
-        E.numrows = 1;
+        editorAppendRow(line, linelen);
     }
     free(line);
     fclose(fp);
@@ -217,10 +224,10 @@ void editorDrawRows(struct abuf* ab){
                 abAppend(ab, "@", 1);
             }
         } else {
-            // Display content
-            int len = E.row.size;
+            // Display each line of text buffer
+            int len = E.row[y].size;
             if (len > E.screencols) len = E.screencols;
-            abAppend(ab, E.row.chars, len);
+            abAppend(ab, E.row[y].chars, len);
         }
 
         abAppend(ab, "\x1b[K", 3); // clear line after cursor
@@ -247,7 +254,7 @@ void editorRefreshScreen(){
 
     abAppend(&ab, "\x1b[?25h", 6);
 
-    write(STDOUT_FILENO, ab.b, ab.len); // write out buffer (contains setting cursor pos)
+    write(STDOUT_FILENO, ab.b, ab.len); // write out abuf buffer (contains setting cursor pos and entire file contents erow)
     abFree(&ab);
 }
 
@@ -302,6 +309,7 @@ void initEditor(){
     E.cx = 0;
     E.cy = 0;
     E.numrows = 0;
+    E.row = NULL;
     if (getWindowSize(&E.screenrows, &E.screencols) == -1) {die("getWindowSize");}
 }
 int main(int argc, char* argv[]){
