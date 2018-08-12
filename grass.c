@@ -8,9 +8,9 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
-#include <string.h>
 
 /*** Defines ***/
 #define GRASS_VERSION "0.0.1"
