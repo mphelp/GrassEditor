@@ -288,6 +288,12 @@ void editorMoveCursor(int key){
         case ARROW_DOWN:
             if (E.cy < E.numrows) E.cy++; break; // cursor can extend below so long as EOF not reached
     }
+    // Snap cursor to end of line if needed
+    row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
+    int rowlen = row ? row->size : 0;
+    if (E.cx > rowlen) {
+        E.cx = rowlen;
+    }
 }
 void editorProcessKeypress(){
     int c = editorReadKey();    
