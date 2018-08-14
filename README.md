@@ -1,6 +1,6 @@
 # GrassEditor
-* Dependency-free Text editor built from the groud up in C (heavily inspired by Kilo)
+<img align="right" width="400" height="200" src="grass.png">
 
-<img align="right" width="1000" height="500" src="grass.png">
+* Dependency-free Text editor built from the groud up in C (heavily inspired by Kilo)
 
  ### ~ Made by Matt Phelps
