@@ -1,5 +1,4 @@
-# GrassEditor
-<img align="right" width="400" height="200" src="grass.png">
+# GrassEditor  <img align="right" width="500" height="200" src="grass.png">
 
 * Dependency-free Text editor built from the groud up in C (heavily inspired by Kilo)
 
