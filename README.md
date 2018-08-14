@@ -2,4 +2,4 @@
 
 * Dependency-free Text editor built from the groud up in C (heavily inspired by Kilo)
 
- ### ~ Made by Matt Phelps
+ #### `~ Made by Matt Phelps`
