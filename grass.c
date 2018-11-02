@@ -387,21 +387,38 @@ void editorProcessKeypress(){
 		case PAGE_UP:
 		case PAGE_DOWN:
 			{
+				int upsave, downsave; // Matthew
 				if (c == PAGE_UP){
-					E.cy = E.rowoff;
+					upsave = E.cy - E.rowoff; // Matthew
+					/*printf("E.cy: %d, E.rowoff: %d, upsave: %d\n",E.cy,
+							E.rowoff, upsave); Matthew */
+					//E.cy = E.rowoff; Matthew
 				} else if (c == PAGE_DOWN){
-					E.cy = E.rowoff + E.screenrows - 1;
+					downsave = (E.rowoff + E.screenrows - 1) - E.cy; // Matthew
+
+					//E.cy = E.rowoff + E.screenrows - 1; Matthew
 					if (E.cy > E.numrows) E.cy = E.numrows;
 				}
-				int times = E.screenrows;
-				while (times--) 
+				/* int times = E.screenrows; Matthew */
+				int half = E.screenrows / 2 - 1; // my bug i.e. feature
+				while (half--){ 
 					editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
-				// Matthew's additions:
-				if (c == PAGE_UP){
-					int number = E.rowoff;
-					while (number--)
-						editorMoveCursor(ARROW_DOWN);
 				}
+				// Matthew's other additions:
+				/* if (c == PAGE_UP){ */
+				/* 	int i = 5; */
+				/* 	while (i--) */
+				/* if (c == PAGE_UP){ */
+				/* 	E.cy += upsave; */
+				/* 	/1* while (upsave--){ *1/ */
+				/* 	/1* 	editorMoveCursor(ARROW_DOWN); *1/ */
+				/* 	/1* } *1/ */
+				/* } else if (c == PAGE_DOWN){ */
+				/* 	E.cy -= downsave; */
+				/* 	/1* while (downsave--){ *1/ */
+				/* 	/1* 	editorMoveCursor(ARROW_UP); *1/ */
+				/* 	/1* } *1/ */
+				/* } */
 			}
 			break;
 		case ARROW_UP:
