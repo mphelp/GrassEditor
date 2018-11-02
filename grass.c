@@ -271,7 +271,7 @@ void editorDrawRows(struct abuf* ab){
 				abAppend(ab, "@", 1);
 			}
 		} else {
-		// Normal Text Rows
+			// Normal Text Rows
 			// TEMPORARY maybe
 			// add line number to left side
 			/*char lineNum[4];
