@@ -15,7 +15,7 @@
 /*** Defines ***/
 #define GRASS_VERSION "0.0.1"
 
-#define GRASS_TAB_STOP 2
+#define GRASS_TAB_STOP 4
 #define CTRL_KEY(k) ((k) & 0x1f)
 #define die(str) write(STDOUT_FILENO,"\x1b[2J",4);write(STDOUT_FILENO,"\x1b[H",3);char _buf[80]; \
 	snprintf(_buf,sizeof(_buf),"Call %s failed in...%s():%d\r\n",str,__func__,__LINE__);perror(_buf);printf("\r");exit(1)
