@@ -41,7 +41,8 @@ typedef struct erow {
 	char* render;
 } erow;
 struct editorConfig {
-	int cx, cy; // cursor position on screen
+	int cx, cy; // cursor position on screen (chars field)
+	int rx; // render field
 	int rowoff; // current line index of file (represents top line of screen)
 	int coloff; // horizontal scroll index
 	int screenrows; // screen height
@@ -234,10 +235,11 @@ void abFree(struct abuf* ab){
 
 /*** Output ***/
 void editorScroll(){
+	E.rx = E.cx;
 	if (E.cy < E.rowoff) E.rowoff = E.cy;
 	if (E.cy >= E.rowoff + E.screenrows) E.rowoff = E.cy - E.screenrows + 1;
-	if (E.cx < E.coloff) E.coloff = E.cx;
-	if (E.cx >= E.coloff + E.screencols) E.coloff = E.cx - E.screencols + 1;
+	if (E.rx < E.coloff) E.coloff = E.rx;
+	if (E.rx >= E.coloff + E.screencols) E.coloff = E.rx - E.screencols + 1;
 }
 void editorDrawWelcomeRow(struct abuf* ab){
 	// Add Welcome message to abuf
@@ -387,6 +389,7 @@ void editorProcessKeypress(){
 void initEditor(){
 	E.cx = 0;
 	E.cy = 0;
+	E.rx = 0;
 	E.rowoff = 0;
 	E.coloff = 0;
 	E.numrows = 0;
