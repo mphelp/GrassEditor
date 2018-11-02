@@ -396,6 +396,12 @@ void editorProcessKeypress(){
 				int times = E.screenrows;
 				while (times--) 
 					editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+				// Matthew's additions:
+				if (c == PAGE_UP){
+					int number = E.rowoff;
+					while (number--)
+						editorMoveCursor(ARROW_DOWN);
+				}
 			}
 			break;
 		case ARROW_UP:
